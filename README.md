@@ -8,7 +8,7 @@ cordova-app-loader
 A little later...
 
 1. Upload an update to your server (**manifest.json** + files)
-2. Use `CordovaAppLoader` to 
+2. Use `CordovaAppLoader` to
    1. `check()` for a new manifest
    2. `download()` files
    3. `update()` your app!
@@ -51,15 +51,15 @@ Automatic updates have a few downsides:
 2. Write a **manifest.json** (see below). Include `autoupdate.js` and `cordova-app-loader-complete.js`.
 3. Set the correct server in `index.html`:
     ```html
-    <script 
-        type="text/javascript" 
-        server="http://data.madebymark.nl/cordova-app-loader/" 
-        manifest="manifest.json" 
+    <script
+        type="text/javascript"
+        server="http://data.madebymark.nl/cordova-app-loader/"
+        manifest="manifest.json"
         src="bootstrap.js"></script>
     ```
 
 4. Write `window.BOOTSTRAP_OK = true` in your code when your app succesfully launches.
-5. Launch your app. 
+5. Launch your app.
 
 Now you can remote update your app:
 
@@ -80,7 +80,7 @@ Now you can remote update your app:
 
 ###Download and include bootstrap.js
 
-You need **bootstrap.js** ([github](https://github.com/markmarijnissen/cordova-app-loader/), [file](https://raw.githubusercontent.com/markmarijnissen/cordova-app-loader/master/bootstrap.js)) to read the **manifest.json** to launch your app. 
+You need **bootstrap.js** ([github](https://github.com/markmarijnissen/cordova-app-loader/), [file](https://raw.githubusercontent.com/markmarijnissen/cordova-app-loader/master/bootstrap.js)) to read the **manifest.json** to launch your app.
 
 Add **bootstrap.js** to your [index.html](https://raw.githubusercontent.com/markmarijnissen/cordova-app-loader/master/www/index.html).
 
@@ -101,15 +101,15 @@ If you want to use your own Promise library, you have to load every module indiv
 **Option 3: Use Bower to fetch pre-build modules:**
 
 ```bash
-  bower install cordova-app-loader 
-  bower install cordova-promise-fs 
+  bower install cordova-app-loader
+  bower install cordova-promise-fs
   bower install bluebird # or another library that follows the Promise/A+ spec.
 ```
 
 **Option 4: Use NPM  to fetch CommonJS modules:**
 
 ```bash
-  npm install cordova-app-loader 
+  npm install cordova-app-loader
   npm install cordova-promise-fs
   npm install bluebird  # or another library that follows the Promise/A+ spec.
 ```
@@ -118,14 +118,14 @@ If you want to use your own Promise library, you have to load every module indiv
 
 Before you start, you need to write a **manifest.json** to describe:
 
-* Which files to download, 
-* Which JS/CSS to load during bootstrap. 
+* Which files to download,
+* Which JS/CSS to load during bootstrap.
 
 ### Writing manifest.json
 
 ```javascript
 {
-  "files": {  // these files are downloaded 
+  "files": {  // these files are downloaded
     "cordova-app-loader-complete": {
       "version": "76f1eecd3887e69d7b08c60be4f14f90069ca8b8",
       "filename": "cordova-app-loader-complete.js"
@@ -215,7 +215,7 @@ var loader = new CordovaAppLoader({
   fs: fs,
   serverRoot: 'http://data.madebymark.nl/cordova-app-loader/',
   localRoot: 'app',
-  cacheBuster: true // make sure we're not downloading cached files.
+  cacheBuster: true, // make sure we're not downloading cached files.
   checkTimeout: 10000 // timeout for the "check" function - when you loose internet connection
 });
 ```
@@ -227,10 +227,10 @@ var loader = new CordovaAppLoader({
 loader.check().then(function(updateAvailable) { ... })  
 
 // download from custom url
-loader.check('http://yourserver.com/manifest.json').then( ... ) 
+loader.check('http://yourserver.com/manifest.json').then( ... )
 
 // or just check an actual Manifest object.
-loader.check({ files: { ... } }).then( ... ) 
+loader.check({ files: { ... } }).then( ... )
 ```
 
 **Implementation Note:** Only file versions are compared! If you, for example, update `manifest.load` then the promise will return `false`!
@@ -288,9 +288,9 @@ First, I wanted to download 'index.html' to storage, then redirect the app to th
 
 This has a few problems:
 
-* `cordova.js` and plugin javascript cannot be found. 
+* `cordova.js` and plugin javascript cannot be found.
 * It is hard to include `cordova.js` in the manifest because it is platform specific.
-* It is hard to find all plugin javascript - it is buried in Cordova internals. 
+* It is hard to find all plugin javascript - it is buried in Cordova internals.
 * Reloading a page costs more time, CPU and memory because cordova plugins are reset.
 
 Dynamically inserting CSS and JS allows you for almost the same freedom in updates, without all these problems.
@@ -301,7 +301,7 @@ Dynamically inserting CSS and JS allows you for almost the same freedom in updat
 * CordovaPromiseFS limits concurrency (3) to avoid trashing your app.
 * CordovaFileCache will retry the download up to 3 times - each with an increasing timeout.
 * When executing `loader.download()` for the second time, old downloads are aborted.
-* "onprogress" event is called explicitly on every download. 
+* "onprogress" event is called explicitly on every download.
 
 ### Avoid downloading if you can copy files
 
@@ -337,7 +337,7 @@ When using `download`: I am assuming Cordova will invoke the error callback. The
 
 ### Crashes
 
-The only critical moment is during a download. Old files are removed while new files aren't fully downloaded yet. This makes the current manifest point to missing or corrupt files. Therefore, before downloading, the current manifest is destroyed. 
+The only critical moment is during a download. Old files are removed while new files aren't fully downloaded yet. This makes the current manifest point to missing or corrupt files. Therefore, before downloading, the current manifest is destroyed.
 
 If the app crashes during a download, it will restart using the original manifest.
 
@@ -364,7 +364,7 @@ To avoid this pitfall, the following safeguard is implemented:
 
 ### Normalize path everywhere
 
-All filenames and paths are normalized. 
+All filenames and paths are normalized.
 
 * This avoids problems on android (when a path starts with a `/`, Android throws a NullPointerExpception)
 * The Manifest.json writer does not have to worry which path convention to use.
