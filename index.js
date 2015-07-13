@@ -15,8 +15,9 @@ function hash(files){
   keys.sort();
   var str = '';
   keys.forEach(function(key){
-    if(files[key] && files[key].version);
+    if(files[key] && files[key].version) {
       str += '@' + files[key].version;
+    }
   });
   return CordovaFileCache.hash(str) + '';
 }
@@ -105,98 +106,99 @@ AppLoader.prototype.check = function(newManifest){
 
   return new Promise(function(resolve,reject){
     Promise.all([gotNewManifest,self.getBundledManifest(),self.cache.list()])
-      .then(function(values){
-        var newManifest = values[0];
-        var bundledManifest = values[1];
-        var newFiles = hash(newManifest.files);
+    .then(function(values){
+      var newManifest = values[0];
+      var bundledManifest = values[1];
+      var newFiles = hash(newManifest.files);
 
-        // Prevent end-less update loop, check if new manifest
-        // has been downloaded before (but failes)
-        
-        // Check if the newFiles match the previous files (last_update_files)
-        if(newFiles === self._lastUpdateFiles) {
-          // YES! So we're doing the same update again!
+      // Prevent end-less update loop, check if new manifest
+      // has been downloaded before (but failes)
 
-          // Check if our current Manifest has indeed the "last_update_files"
-          var currentFiles = hash(Manifest.files);
-          if(self._lastUpdateFiles !== currentFiles){
-            // No! So we've updated, yet they don't appear in our manifest. This means:
-            console.warn('New manifest available, but an earlier update attempt failed. Will not download.');
-            self.corruptNewManifest = true;
-            resolve(null);
-          }
+      // Check if the newFiles match the previous files (last_update_files)
+      if(newFiles === self._lastUpdateFiles) {
+        // YES! So we're doing the same update again!
+
+        // Check if our current Manifest has indeed the "last_update_files"
+        var currentFiles = hash(Manifest.files);
+        if(self._lastUpdateFiles !== currentFiles){
+          // No! So we've updated, yet they don't appear in our manifest. This means:
+          console.warn('New manifest available, but an earlier update attempt failed. Will not download.');
+          self.corruptNewManifest = true;
+          resolve(null);
+        } else {
           // Yes, we've updated and we've succeeded.
           resolve(false);
-          return;
         }
+        return;
+      }
 
-        // Check if new manifest is valid
-        if(!newManifest.files){
-          reject('Downloaded Manifest has no "files" attribute.');
-          return;
-        }
+      // Check if new manifest is valid
+      if(!newManifest.files){
+        reject('Downloaded Manifest has no "files" attribute.');
+        return;
+      }
 
-        // We're good to go check! Get all the files we need
-        var cachedFiles = values[2]; // files in cache
-        var oldFiles = self._createFilemap(manifest.files); // files in current manifest
-        var newFiles = self._createFilemap(newManifest.files); // files in new manifest
-        var bundledFiles = self._createFilemap(bundledManifest.files); // files in app bundle
+      // We're good to go check! Get all the files we need
+      var cachedFiles = values[2]; // files in cache
+      var oldFiles = self._createFilemap(manifest.files); // files in current manifest
+      var newFiles = self._createFilemap(newManifest.files); // files in new manifest
+      var bundledFiles = self._createFilemap(bundledManifest.files); // files in app bundle
 
-        // Create COPY and DOWNLOAD lists
-        self._toBeDownloaded = [];
-        self._toBeCopied = [];
-        self._toBeDeleted= [];
-        var isCordova = self.cache._fs.isCordova;
-        Object.keys(newFiles)
-          // Find files that have changed version or are missing
-          .filter(function(file){
-                    // if new file, or...
-            return !oldFiles[file] ||
-                    // version has changed, or...
-                    oldFiles[file].version !== newFiles[file].version ||
-                    // not in cache for some reason
-                    !self.cache.isCached(file);
-          })
-          // Add them to the correct list
-          .forEach(function(file){
-            // bundled version matches new version, so we can copy!
-            if(isCordova && bundledFiles[file] && bundledFiles[file].version === newFiles[file].version){
-              self._toBeCopied.push(file);
-            // othwerwise, we must download
-            } else {
-              self._toBeDownloaded.push(file);
-            }
-          });
-
-        // Delete files
-        self._toBeDeleted = cachedFiles
-          .map(function(file){
-            return file.substr(self.cache.localRoot.length);
-          })
-          .filter(function(file){
-                  // Everything that is not in new manifest, or....
-            return !newFiles[file] ||
-                  // Files that will be downloaded, or...
-                   self._toBeDownloaded.indexOf(file) >= 0 ||
-                  // Files that will be copied
-                   self._toBeCopied.indexOf(file) >= 0;
-          });
-
-
-        var changes = self._toBeDeleted.length + self._toBeDownloaded.length;
-        // Note: if we only need to copy files, we can keep serving from bundle!
-        // So no update is needed!
-        if(changes > 0){
-          // Save the new Manifest
-          self.newManifest = newManifest;
-          self.newManifest.root = self.cache.localInternalURL;
-          resolve(true);
+      // Create COPY and DOWNLOAD lists
+      self._toBeDownloaded = [];
+      self._toBeCopied = [];
+      self._toBeDeleted= [];
+      var isCordova = self.cache._fs.isCordova;
+      Object.keys(newFiles)
+      // Find files that have changed version or are missing
+      .filter(function(file){
+        // if new file, or...
+        return !oldFiles[file] ||
+        // version has changed, or...
+        oldFiles[file].version !== newFiles[file].version ||
+        // not in cache for some reason
+        !self.cache.isCached(file);
+      })
+      // Add them to the correct list
+      .forEach(function(file){
+        // bundled version matches new version, so we can copy!
+        if(isCordova && bundledFiles[file] && bundledFiles[file].version === newFiles[file].version){
+          self._toBeCopied.push(file);
+          // othwerwise, we must download
         } else {
-          resolve(false);
+          self._toBeDownloaded.push(file);
         }
-      }, function(err){
-        reject(err);
-      }); // end of .then
+      });
+
+      // Delete files
+      self._toBeDeleted = cachedFiles
+      .map(function(file){
+        return file.substr(self.cache.localRoot.length);
+      })
+      .filter(function(file){
+        // Everything that is not in new manifest, or....
+        return !newFiles[file] ||
+        // Files that will be downloaded, or...
+        self._toBeDownloaded.indexOf(file) >= 0 ||
+        // Files that will be copied
+        self._toBeCopied.indexOf(file) >= 0;
+      });
+
+
+      var changes = self._toBeDeleted.length + self._toBeDownloaded.length;
+      // Note: if we only need to copy files, we can keep serving from bundle!
+      // So no update is needed!
+      if(changes > 0){
+        // Save the new Manifest
+        self.newManifest = newManifest;
+        self.newManifest.root = self.cache.localInternalURL;
+        resolve(true);
+      } else {
+        resolve(false);
+      }
+    }, function(err){
+      reject(err);
+    }); // end of .then
   }); // end of new Promise
 };
 
@@ -219,29 +221,29 @@ AppLoader.prototype.download = function(onprogress){
   localStorage.setItem('last_update_files',hash(this.newManifest.files));
   this.manifest.files = Manifest.files = {};
   return self.cache.remove(self._toBeDeleted,true)
-    .then(function(){
-      return Promise.all(self._toBeCopied.map(function(file){
-        return self.cache._fs.download(BUNDLE_ROOT + file,self.cache.localRoot + file);
-      }));
-    })
-    .then(function(){
-      if(self.allowServerRootFromManifest && self.newManifest.serverRoot){
-        self.cache.serverRoot = self.newManifest.serverRoot;
-      }
-      self.cache.add(self._toBeDownloaded);
-      return self.cache.download(onprogress);
-    }).then(function(){
-      self._toBeDeleted = [];
-      self._toBeDownloaded = [];
-      self._updateReady = true;
-      return self.newManifest;
-    },function(files){
-      // on download error, remove files...
-      if(!!files && files.length){
-        self.cache.remove(files);
-      }
-      return files;
-    });
+  .then(function(){
+    return Promise.all(self._toBeCopied.map(function(file){
+      return self.cache._fs.download(BUNDLE_ROOT + file,self.cache.localRoot + file);
+    }));
+  })
+  .then(function(){
+    if(self.allowServerRootFromManifest && self.newManifest.serverRoot){
+      self.cache.serverRoot = self.newManifest.serverRoot;
+    }
+    self.cache.add(self._toBeDownloaded);
+    return self.cache.download(onprogress);
+  }).then(function(){
+    self._toBeDeleted = [];
+    self._toBeDownloaded = [];
+    self._updateReady = true;
+    return self.newManifest;
+  },function(files){
+    // on download error, remove files...
+    if(!!files && files.length){
+      self.cache.remove(files);
+    }
+    return files;
+  });
 };
 
 AppLoader.prototype.update = function(reload){
